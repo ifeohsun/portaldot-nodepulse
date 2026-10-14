@@ -1,0 +1,45 @@
+# NodePulse — node health monitoring + on-chain attestations for Portaldot
+
+Track: **Node Operations & Tooling** (Portaldot Hacker House 2026)
+
+NodePulse polls Portaldot nodes over both the Substrate JSON-RPC and the EVM JSON-RPC
+(Portaldot V3.0 runs WASM + EVM), computes a 0–100 health score (peers, sync state,
+block lag vs. the best node, latency) and lets operators publish compact attestations to
+the `NodePulseRegistry` Solidity contract on the Portaldot testnet so anyone can audit node
+uptime on-chain.
+
+## Architecture
+```
+ [Portaldot nodes] --system_health / chain_getHeader / eth_blockNumber--> [nodepulse.monitor]
+                                                                               | score()
+                                                                               v
+                                         NodePulseRegistry.report(nodeId, height, peers, score)
+                                                                               |
+                                                     [dashboard / explorers read latest + events]
+```
+
+## Run
+```bash
+python3 -m nodepulse.monitor wss-or-https://<portaldot-rpc>  --kind substrate
+python3 -m nodepulse.monitor https://<portaldot-evm-rpc>     --kind evm
+python3 -m unittest discover -s tests -t .      # tests use a local fake node, no network
+```
+
+## Deploy the contract (Portaldot testnet)
+1. Get testnet POT from the Portaldot faucet (Discord) into a burner EVM wallet.
+2. Open `contracts/NodePulseRegistry.sol` in Remix, compile with 0.8.20+, deploy via
+   injected provider pointed at the Portaldot EVM testnet RPC.
+3. Record the contract address + tx hash below.
+
+| Item | Value |
+|---|---|
+| Contract address | _TBD_ |
+| Deploy tx hash | _TBD_ |
+
+## Roadmap
+- Cron worker that posts `report()` every N minutes
+- Static dashboard reading `PulseReported` events
+- Alerts (webhook) when score < 60
+
+Dependencies: Python 3 stdlib only. Code written during the Hacker House (Oct 2026), with AI assistance.
+License: MIT
