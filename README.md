@@ -39,7 +39,7 @@ python3 -m unittest discover -s tests -t .      # tests use a local fake node, n
 ## Roadmap
 - Cron worker that posts `report()` every N minutes
 - Static dashboard reading `PulseReported` events
-- Alerts (webhook) when score < 60
+- [x] Alerts on degrade/recover transitions (`nodepulse/alerts.py`, Discord-compatible webhook)
 
 Dependencies: Python 3 stdlib only. Code written during the Hacker House (Oct 2026), with AI assistance.
 License: MIT
