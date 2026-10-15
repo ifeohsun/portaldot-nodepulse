@@ -22,6 +22,8 @@ uptime on-chain.
 ```bash
 python3 -m nodepulse.monitor wss-or-https://<portaldot-rpc>  --kind substrate
 python3 -m nodepulse.monitor https://<portaldot-evm-rpc>     --kind evm
+python3 -m nodepulse.history watch <rpc-url> --kind evm --interval 60 --webhook <discord-webhook>
+python3 -m nodepulse.history stats --hours 24   # uptime %, avg/min score per node
 python3 -m unittest discover -s tests -t .      # tests use a local fake node, no network
 ```
 
@@ -37,7 +39,8 @@ python3 -m unittest discover -s tests -t .      # tests use a local fake node, n
 | Deploy tx hash | _TBD_ |
 
 ## Roadmap
-- Cron worker that posts `report()` every N minutes
+- [x] Polling worker with JSONL history + uptime stats (`nodepulse/history.py`)
+- Post `report()` on-chain from the worker every N minutes
 - Static dashboard reading `PulseReported` events
 - [x] Alerts on degrade/recover transitions (`nodepulse/alerts.py`, Discord-compatible webhook)
 
