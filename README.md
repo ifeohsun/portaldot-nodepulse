@@ -24,6 +24,8 @@ python3 -m nodepulse.monitor wss-or-https://<portaldot-rpc>  --kind substrate
 python3 -m nodepulse.monitor https://<portaldot-evm-rpc>     --kind evm
 python3 -m nodepulse.history watch <rpc-url> --kind evm --interval 60 --webhook <discord-webhook>
 python3 -m nodepulse.history stats --hours 24   # uptime %, avg/min score per node
+python3 -m nodepulse.attest register https://<portaldot-evm-rpc>   # node_id + register() calldata
+python3 -m nodepulse.monitor <rpc> --kind evm > s.json && python3 -m nodepulse.attest samples s.json  # report() calldata
 python3 -m unittest discover -s tests -t .      # tests use a local fake node, no network
 ```
 
@@ -40,6 +42,7 @@ python3 -m unittest discover -s tests -t .      # tests use a local fake node, n
 
 ## Roadmap
 - [x] Polling worker with JSONL history + uptime stats (`nodepulse/history.py`)
+- [x] ABI calldata for `register()`/`report()` from samples, pure-Python Keccak-256 (`nodepulse/attest.py`; NodePulse never holds keys, operators sign in their own wallet)
 - Post `report()` on-chain from the worker every N minutes
 - Static dashboard reading `PulseReported` events
 - [x] Alerts on degrade/recover transitions (`nodepulse/alerts.py`, Discord-compatible webhook)
