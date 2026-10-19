@@ -37,8 +37,16 @@ python3 -m unittest discover -s tests -t .      # tests use a local fake node, n
 
 | Item | Value |
 |---|---|
-| Contract address | _TBD_ |
-| Deploy tx hash | _TBD_ |
+| Network | Portaldot V3 testnet (EVM chain id 420420777, RPC `https://test-evm-rpc-v3.portaldot.dev`) |
+| Contract address | `0xEc531adADF19f263231A32310E9ACb3191B898D2` |
+| Deploy tx hash | `0x952dc3d097c46555e67067ea13232488bc38182862469a2d79fa3ab2ec16708b` (block 97193) |
+| Deployer / operator | `0x001F79C06e2f58bd9861e4a8592b90DaCc1a82AB` (burner) |
+| First `register()` | `0x397257e3dfe3a174ec11f6845a98bb7206c4569c674d2af9227f9211bc028c57` (node `test-evm-rpc-v3.portaldot.dev`) |
+| First `report()` | `0x124b9992fdda1c384b841e5dda65fc015bfe58fbefd6c090d05b1c9dc2e664fd` (height 97196, 2 peers, score 75) |
+
+Compiled with solc 0.8.24 (optimizer 200 runs, EVM target cancun) and deployed as EVM bytecode
+through the testnet's `eth-rpc` (pallet-revive). The register/report calldata came straight from
+`nodepulse.attest`, from a live `nodepulse.monitor` sample.
 
 ## Roadmap
 - [x] Polling worker with JSONL history + uptime stats (`nodepulse/history.py`)

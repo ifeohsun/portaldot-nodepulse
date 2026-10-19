@@ -3,7 +3,7 @@ import json, sys, time, urllib.request, argparse
 
 def rpc(url, method, params=None, timeout=10):
     body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params or []}).encode()
-    req = urllib.request.Request(url, body, {"Content-Type": "application/json"})
+    req = urllib.request.Request(url, body, {"Content-Type": "application/json", "User-Agent": "nodepulse/0.1"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         out = json.loads(r.read())
     if "error" in out:
