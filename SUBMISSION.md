@@ -17,7 +17,6 @@ Outstanding:
 - Worker that signs and posts report() every N minutes via an operator-held key/remote signer.
 - Multi-node registry demo (several community RPC/validator nodes), score history charts.
 - Substrate-side metrics (validator/session info) and network-security checks.
-- Final demo video and docs polish.
 
 Testnet deployment:
 - Contract: 0xEc531adADF19f263231A32310E9ACb3191B898D2 (Portaldot V3 testnet, EVM chain id 420420777)
@@ -25,5 +24,8 @@ Testnet deployment:
 - register() tx: 0x397257e3dfe3a174ec11f6845a98bb7206c4569c674d2af9227f9211bc028c57
 - report() txs: 0x124b9992fdda1c384b841e5dda65fc015bfe58fbefd6c090d05b1c9dc2e664fd, 0xcb6086a3bddb22f187ae00e9d201697b5f5d794e750a7d9255171500d16b1970
 - Explorer: https://node-console.portaldot.dev
+
+Demo video: https://ifeohsun.github.io/portaldot-nodepulse/demo.mp4 (also https://github.com/ifeohsun/portaldot-nodepulse/raw/main/docs/demo.mp4)
+Pitch deck: https://ifeohsun.github.io/portaldot-nodepulse/deck.html (PDF: https://ifeohsun.github.io/portaldot-nodepulse/deck.pdf)
 
 Demo: live dashboard https://ifeohsun.github.io/portaldot-nodepulse/ (walkthrough in DEMO.md).
