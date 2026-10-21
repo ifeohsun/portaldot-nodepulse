@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NodePulse — live Portaldot node health</title>
+<style>
+body{font:14px/1.45 system-ui,sans-serif;margin:0 auto;padding:1.5em;max-width:980px;color:#1b1b1b}
+h1{margin:.2em 0}.muted{color:#666}code{background:#f3f3f3;padding:1px 4px;border-radius:3px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin:1em 0}
+.card{border:1px solid #ddd;border-radius:8px;padding:10px}.big{font-size:28px;font-weight:700}
+.ok{color:#0a7d32}.warn{color:#b26b00}.bad{color:#b00020}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #eee;padding:5px 8px;text-align:left}
+input{width:100%;max-width:520px}button{margin-left:6px}
+</style></head><body>
+<h1>NodePulse</h1>
+<p class="muted">Live, read-only view of on-chain node health attestations in <code>NodePulseRegistry</code> on the
+Portaldot V3 testnet. This page has no backend: your browser queries the Portaldot EVM JSON-RPC directly
+(<code>eth_blockNumber</code>, <code>eth_getLogs</code>) and decodes the <code>NodeRegistered</code> /
+<code>PulseReported</code> events. Source: <a href="https://github.com/ifeohsun/portaldot-nodepulse">github.com/ifeohsun/portaldot-nodepulse</a>.</p>
+<p>Registry <input id="contract" value="0xEc531adADF19f263231A32310E9ACb3191B898D2"><button id="reload">Reload</button></p>
+<div id="head" class="muted">Loading…</div>
+<div id="nodes" class="grid"></div>
+<h3>Attestation history (newest first)</h3>
+<table><thead><tr><th>Node</th><th>Chain block</th><th>Reported height</th><th>Peers</th><th>Score</th><th>Tx</th></tr></thead>
+<tbody id="rows"></tbody></table>
+<script>
+const RPC = "https://test-evm-rpc-v3.portaldot.dev";
+const EXPLORER = "https://node-console.portaldot.dev";
+const DEPLOY_BLOCK = 97193;
+// keccak256("PulseReported(bytes32,uint64,uint32,uint16)") / keccak256("NodeRegistered(bytes32,address,string)")
+const T_PULSE = "0x2d13cdbfdb6e7eb308b1e2929ee53ba5ba68019f160e3150c87574373f13c3cb";
+const T_REG = "0x8326de45f66576db8724d4b3fca6bd518de1924e3dd3a2a62722d49e2ed34183";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+async function rpc(method, params) {
+  const r = await fetch(RPC, {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({jsonrpc: "2.0", id: 1, method, params})});
+  const j = await r.json(); if (j.error) throw new Error(j.error.message); return j.result;
+}
+const word = (d, i) => BigInt("0x" + (d.slice(2 + 64 * i, 2 + 64 * (i + 1)) || "0"));
+function label(d) {
+  const off = Number(word(d, 0)) * 2, len = Number(BigInt("0x" + d.slice(2 + off, 2 + off + 64))) * 2;
+  const hex = d.slice(2 + off + 64, 2 + off + 64 + len);
+  return new TextDecoder().decode(new Uint8Array(hex.match(/../g).map(h => parseInt(h, 16))));
+}
+const cls = s => s >= 80 ? "ok" : s >= 50 ? "warn" : "bad";
+async function load() {
+  const contract = document.getElementById("contract").value.trim();
+  document.getElementById("head").textContent = "Loading…";
+  try {
+    const [tip, logs] = await Promise.all([rpc("eth_blockNumber", []), rpc("eth_getLogs", [{address: contract,
+      fromBlock: "0x" + DEPLOY_BLOCK.toString(16), toBlock: "latest", topics: [[T_REG, T_PULSE]]}])]);
+    const nodes = {}, rows = [];
+    logs.sort((a, b) => parseInt(a.blockNumber, 16) - parseInt(b.blockNumber, 16));
+    for (const l of logs) {
+      const id = l.topics[1], n = nodes[id] ||= {id, label: id.slice(0, 10) + "…", reports: []};
+      if (l.topics[0] === T_REG) { n.label = label(l.data); n.operator = "0x" + l.topics[2].slice(-40); }
+      else if (l.topics[0] === T_PULSE) n.reports.push({block: parseInt(l.blockNumber, 16), height: Number(word(l.data, 0)),
+        peers: Number(word(l.data, 1)), score: Number(word(l.data, 2)), tx: l.transactionHash});
+    }
+    const tipN = parseInt(tip, 16);
+    document.getElementById("head").innerHTML = `Chain tip <b>${tipN}</b> · ${Object.keys(nodes).length} node(s) · ` +
+      `${logs.length} event(s) · <a href="${EXPLORER}/address/${esc(contract)}">registry on explorer</a> · updated ${new Date().toLocaleString()}`;
+    document.getElementById("nodes").innerHTML = Object.values(nodes).map(n => {
+      const last = n.reports[n.reports.length - 1], sc = n.reports.map(r => r.score);
+      const avg = sc.length ? (sc.reduce((a, b) => a + b, 0) / sc.length).toFixed(1) : "–";
+      return `<div class="card"><div class="muted">${esc(n.label)}</div>` +
+        `<div class="big ${last ? cls(last.score) : ""}">${last ? last.score : "–"}<span class="muted" style="font-size:14px"> / 100 latest</span></div>` +
+        `reports ${sc.length} · avg ${avg} · min ${sc.length ? Math.min(...sc) : "–"}<br>` +
+        `last attested ${last ? (tipN - last.block) + " blocks ago" : "never"}<br><span class="muted">operator ${esc(n.operator || "?")}</span></div>`;
+    }).join("");
+    for (const n of Object.values(nodes)) for (const r of n.reports) rows.push({n, r});
+    rows.sort((a, b) => b.r.block - a.r.block);
+    document.getElementById("rows").innerHTML = rows.map(({n, r}) =>
+      `<tr><td>${esc(n.label)}</td><td>${r.block}</td><td>${r.height}</td><td>${r.peers}</td>` +
+      `<td class="${cls(r.score)}"><b>${r.score}</b></td><td><a href="${EXPLORER}/tx/${esc(r.tx)}">${esc(r.tx.slice(0, 12))}…</a></td></tr>`).join("");
+  } catch (e) { document.getElementById("head").innerHTML = `<span class="bad">RPC error: ${esc(e.message)}</span>`; }
+}
+document.getElementById("reload").onclick = load; load(); setInterval(load, 60000);
+</script></body></html>
