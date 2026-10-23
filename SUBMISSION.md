@@ -11,7 +11,8 @@ Current progress:
 - NodePulseRegistry (Solidity) deployed on Portaldot V3 testnet; keyless ABI calldata builder for register()/report().
 - On-chain verifier (nodepulse.status) and event timeline (nodepulse.events, eth_getLogs).
 - Live, backend-free dashboard reading PulseReported events from the testnet RPC in the browser.
-- 22 unit tests (fake RPC, no network), all passing.
+- Prometheus /metrics exporter (nodepulse.exporter) so operators can scrape NodePulse into Grafana.
+- 26 unit tests (fake RPC, no network), all passing.
 
 Outstanding:
 - Worker that signs and posts report() every N minutes via an operator-held key/remote signer.
