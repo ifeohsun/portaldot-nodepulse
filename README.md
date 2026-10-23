@@ -31,6 +31,7 @@ python3 -m nodepulse.monitor <rpc> --kind evm > s.json && python3 -m nodepulse.a
 python3 -m unittest discover -s tests -t .      # tests use a local fake node, no network
 python3 -m nodepulse.status                      # verify live deploy + register/report on-chain
 python3 -m nodepulse.events --html snap.html     # on-chain attestation timeline (eth_getLogs) + HTML snapshot
+python3 -m nodepulse.exporter <rpc> --kind evm --port 9617 [--history nodepulse.jsonl]  # Prometheus /metrics for Grafana
 ```
 
 ## Deploy the contract (Portaldot testnet)
@@ -61,6 +62,7 @@ through the testnet's `eth-rpc` (pallet-revive). The register/report calldata ca
 - Post `report()` on-chain from the worker every N minutes
 - [x] Event timeline + live static dashboard reading `NodeRegistered`/`PulseReported` events (`nodepulse/events.py`, `docs/index.html` on GitHub Pages)
 - [x] Alerts on degrade/recover transitions (`nodepulse/alerts.py`, Discord-compatible webhook)
+- [x] Prometheus exporter: `/metrics` gauges for up/score/peers/height/latency + rolling uptime from history (`nodepulse/exporter.py`)
 
 Dependencies: Python 3 stdlib only. Code written during the Hacker House (Oct 2026), with AI assistance.
 License: MIT
