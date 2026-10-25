@@ -24,7 +24,7 @@ uptime on-chain.
 ```bash
 python3 -m nodepulse.monitor wss-or-https://<portaldot-rpc>  --kind substrate
 python3 -m nodepulse.monitor https://<portaldot-evm-rpc>     --kind evm
-python3 -m nodepulse.history watch <rpc-url> --kind evm --interval 60 --webhook <discord-webhook>
+python3 -m nodepulse.history watch <rpc-url> --kind evm --interval 60 --webhook <discord-webhook> --confirm 3 --stall-after 5
 python3 -m nodepulse.history stats --hours 24   # uptime %, avg/min score per node
 python3 -m nodepulse.attest register https://<portaldot-evm-rpc>   # node_id + register() calldata
 python3 -m nodepulse.monitor <rpc> --kind evm > s.json && python3 -m nodepulse.attest samples s.json  # report() calldata
@@ -62,6 +62,7 @@ through the testnet's `eth-rpc` (pallet-revive). The register/report calldata ca
 - Post `report()` on-chain from the worker every N minutes
 - [x] Event timeline + live static dashboard reading `NodeRegistered`/`PulseReported` events (`nodepulse/events.py`, `docs/index.html` on GitHub Pages)
 - [x] Alerts on degrade/recover transitions (`nodepulse/alerts.py`, Discord-compatible webhook)
+- [x] Flap suppression (`--confirm N` consecutive samples) and stalled-chain detection (`--stall-after N`: alerts when a node answers RPC but its best height stops advancing)
 - [x] Prometheus exporter: `/metrics` gauges for up/score/peers/height/latency + rolling uptime from history (`nodepulse/exporter.py`)
 
 Dependencies: Python 3 stdlib only. Code written during the Hacker House (Oct 2026), with AI assistance.

@@ -49,14 +49,14 @@ def stats(records, threshold=60):
     return res
 
 def watch(urls, kind, path, interval, iterations=None, threshold=60, webhook=None,
-          sampler=None, sleep=time.sleep):
+          sampler=None, sleep=time.sleep, confirm=1, stall_after=None):
     """Poll nodes every `interval` seconds, persist samples, fire alerts on transitions."""
     sampler = sampler or monitor.run
     state, n = {}, 0
     while iterations is None or n < iterations:
         samples = sampler(urls, kind)
         append(path, samples)
-        fired, state = alerts.evaluate(samples, state, threshold)
+        fired, state = alerts.evaluate(samples, state, threshold, confirm, stall_after)
         for a in fired:
             print(json.dumps(a))
         if fired and webhook:
@@ -79,11 +79,14 @@ def main(argv=None):
     w.add_argument("--iterations", type=int)
     w.add_argument("--threshold", type=int, default=60)
     w.add_argument("--webhook")
+    w.add_argument("--confirm", type=int, default=1, help="consecutive samples before alerting (flap suppression)")
+    w.add_argument("--stall-after", type=int, help="alert when best height hasn't advanced for N samples")
     st = sub.add_parser("stats"); st.add_argument("--db", default="nodepulse-history.jsonl")
     st.add_argument("--hours", type=float, help="only the last N hours")
     a = p.parse_args(argv)
     if a.cmd == "watch":
-        watch(a.urls, a.kind, a.db, a.interval, a.iterations, a.threshold, a.webhook)
+        watch(a.urls, a.kind, a.db, a.interval, a.iterations, a.threshold, a.webhook,
+              confirm=a.confirm, stall_after=a.stall_after)
     else:
         since = int(time.time() - a.hours * 3600) if a.hours else None
         print(json.dumps(stats(load(a.db, since)), indent=2))

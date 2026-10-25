@@ -30,7 +30,7 @@ class T(unittest.TestCase):
         sleeps = []
         state = history.watch(["n"], "evm", self.db, 5, iterations=3,
                               sampler=lambda u, k: next(seq), sleep=sleeps.append)
-        self.assertEqual(state, {"n": "ok"}); self.assertEqual(sleeps, [5, 5])
+        self.assertEqual(state["n"]["status"], "ok"); self.assertEqual(sleeps, [5, 5])
         self.assertEqual([r["score"] for r in history.load(self.db)], [95, 20, 90])
 
 if __name__ == "__main__":
