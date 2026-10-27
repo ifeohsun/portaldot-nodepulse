@@ -32,6 +32,7 @@ python3 -m unittest discover -s tests -t .      # tests use a local fake node, n
 python3 -m nodepulse.status                      # verify live deploy + register/report on-chain
 python3 -m nodepulse.events --html snap.html     # on-chain attestation timeline (eth_getLogs) + HTML snapshot
 python3 -m nodepulse.exporter <rpc> --kind evm --port 9617 [--history nodepulse.jsonl]  # Prometheus /metrics for Grafana
+python3 -m nodepulse.incidents --hours 168 --sla 99.5 --md   # incident windows, MTTR/MTBF, SLA budget (exit 1 if missed)
 ```
 
 ## Deploy the contract (Portaldot testnet)
@@ -64,6 +65,7 @@ through the testnet's `eth-rpc` (pallet-revive). The register/report calldata ca
 - [x] Alerts on degrade/recover transitions (`nodepulse/alerts.py`, Discord-compatible webhook)
 - [x] Flap suppression (`--confirm N` consecutive samples) and stalled-chain detection (`--stall-after N`: alerts when a node answers RPC but its best height stops advancing)
 - [x] Prometheus exporter: `/metrics` gauges for up/score/peers/height/latency + rolling uptime from history (`nodepulse/exporter.py`)
+- [x] Incident / SLA report: downtime windows, MTTR, MTBF, time-weighted availability and remaining error budget, JSON or Markdown (`nodepulse/incidents.py`)
 
 Dependencies: Python 3 stdlib only. Code written during the Hacker House (Oct 2026), with AI assistance.
 License: MIT
