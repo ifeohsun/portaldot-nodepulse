@@ -49,21 +49,30 @@ def stats(records, threshold=60):
     return res
 
 def watch(urls, kind, path, interval, iterations=None, threshold=60, webhook=None,
-          sampler=None, sleep=time.sleep, confirm=1, stall_after=None):
-    """Poll nodes every `interval` seconds, persist samples, fire alerts on transitions."""
+          sampler=None, sleep=time.sleep, confirm=1, stall_after=None,
+          deliver=None, outbox_max=50):
+    """Poll nodes every `interval` seconds, persist samples, fire alerts on transitions.
+
+    Alerts the webhook rejected stay in a bounded outbox and are retried next cycle,
+    so a short Discord outage doesn't silently drop a degrade/recover notice."""
     sampler = sampler or monitor.run
-    state, n = {}, 0
+    deliver = deliver or alerts.deliver
+    state, n, outbox = {}, 0, []
     while iterations is None or n < iterations:
         samples = sampler(urls, kind)
         append(path, samples)
         fired, state = alerts.evaluate(samples, state, threshold, confirm, stall_after)
         for a in fired:
             print(json.dumps(a))
-        if fired and webhook:
+        if webhook and (fired or outbox):
+            pending = [{k: v for k, v in a.items() if k != "delivery_error"} for a in outbox] + fired
             try:
-                alerts.deliver(fired, webhook)
+                failed = deliver(pending, webhook)
             except Exception as e:          # never let a dead webhook stop monitoring
-                print(json.dumps({"webhook_error": str(e)}))
+                failed = [dict(a, delivery_error=str(e)) for a in pending]
+            for a in failed:
+                print(json.dumps({"webhook_error": a["delivery_error"], "url": a["url"]}))
+            outbox = failed[-outbox_max:]
         n += 1
         if iterations is None or n < iterations:
             sleep(interval)

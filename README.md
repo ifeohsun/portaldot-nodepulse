@@ -64,6 +64,7 @@ through the testnet's `eth-rpc` (pallet-revive). The register/report calldata ca
 - Post `report()` on-chain from the worker every N minutes
 - [x] Event timeline + live static dashboard reading `NodeRegistered`/`PulseReported` events (`nodepulse/events.py`, `docs/index.html` on GitHub Pages)
 - [x] Alerts on degrade/recover transitions (`nodepulse/alerts.py`, Discord-compatible webhook)
+- [x] Reliable webhook delivery: per-alert retry with exponential backoff, failure isolation, and a bounded outbox that re-sends undelivered alerts next cycle
 - [x] Flap suppression (`--confirm N` consecutive samples) and stalled-chain detection (`--stall-after N`: alerts when a node answers RPC but its best height stops advancing)
 - [x] Prometheus exporter: `/metrics` gauges for up/score/peers/height/latency + rolling uptime from history (`nodepulse/exporter.py`)
 - [x] Incident / SLA report: downtime windows, MTTR, MTBF, time-weighted availability and remaining error budget, JSON or Markdown (`nodepulse/incidents.py`)
