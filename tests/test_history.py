@@ -25,6 +25,23 @@ class T(unittest.TestCase):
         self.assertEqual(s["a"]["avg_score"], 55.0); self.assertEqual(s["a"]["last_ts"], 4)
         self.assertEqual(s["b"]["uptime_pct"], 100.0)
 
+    def test_latency_percentiles_and_block_rate(self):
+        self.assertIsNone(history.percentile([], 50))
+        vals = list(range(1, 101))
+        self.assertEqual(history.percentile(vals, 50), 50)
+        self.assertEqual(history.percentile(vals, 95), 95)
+        self.assertEqual(history.percentile(vals, 99), 99)
+        self.assertEqual(history.percentile([7], 99), 7)
+        recs = [{"url": "a", "score": 90, "ts": 0, "best": 100, "latency_ms": 120},
+                {"url": "a", "score": 90, "ts": 60, "best": 110, "latency_ms": 80},
+                {"url": "a", "score": 0, "ts": 90, "best": 0, "error": "timeout"},   # ignored
+                {"url": "a", "score": 90, "ts": 120, "best": 120, "latency_ms": 900}]
+        s = history.stats(recs)["a"]
+        self.assertEqual(s["latency_p50_ms"], 120); self.assertEqual(s["latency_p99_ms"], 900)
+        self.assertEqual(s["blocks_per_min"], 10.0)
+        one = history.stats([{"url": "b", "score": 0, "error": "x", "ts": 1}])["b"]
+        self.assertIsNone(one["latency_p50_ms"]); self.assertIsNone(one["blocks_per_min"])
+
     def test_watch_loop_persists_and_alerts(self):
         seq = iter([[{"url": "n", "score": 95}], [{"url": "n", "score": 20}], [{"url": "n", "score": 90}]])
         sleeps = []

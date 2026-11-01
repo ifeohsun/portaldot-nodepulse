@@ -25,7 +25,7 @@ uptime on-chain.
 python3 -m nodepulse.monitor wss-or-https://<portaldot-rpc>  --kind substrate
 python3 -m nodepulse.monitor https://<portaldot-evm-rpc>     --kind evm
 python3 -m nodepulse.history watch <rpc-url> --kind evm --interval 60 --webhook <discord-webhook> --confirm 3 --stall-after 5
-python3 -m nodepulse.history stats --hours 24   # uptime %, avg/min score per node
+python3 -m nodepulse.history stats --hours 24   # uptime %, avg/min score, latency p50/p95/p99, blocks/min per node
 python3 -m nodepulse.attest register https://<portaldot-evm-rpc>   # node_id + register() calldata
 python3 -m nodepulse.monitor <rpc> --kind evm > s.json && python3 -m nodepulse.attest samples s.json  # report() calldata
 python3 -m unittest discover -s tests -t .      # tests use a local fake node, no network

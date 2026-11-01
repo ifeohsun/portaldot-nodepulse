@@ -29,8 +29,24 @@ def load(path, since=None):
                 out.append(rec)
     return out
 
+def percentile(values, q):
+    """Nearest-rank percentile (q in 0..100) of a non-empty list; None if empty."""
+    if not values:
+        return None
+    vs = sorted(values)
+    k = max(0, min(len(vs) - 1, int(round(q / 100.0 * len(vs) + 0.5)) - 1))
+    return vs[k]
+
+def block_rate(rs):
+    """Blocks produced per minute, from the first/last successful samples' best height.
+    Returns None with fewer than two usable samples or zero elapsed time."""
+    ok = sorted((r for r in rs if "error" not in r and r.get("best")), key=lambda r: r.get("ts", 0))
+    if len(ok) < 2 or ok[-1]["ts"] <= ok[0]["ts"]:
+        return None
+    return round((ok[-1]["best"] - ok[0]["best"]) * 60.0 / (ok[-1]["ts"] - ok[0]["ts"]), 2)
+
 def stats(records, threshold=60):
-    """Per-node uptime %, average/min score and last-seen timestamp."""
+    """Per-node uptime %, average/min score, latency p50/p95/p99, block rate and last-seen."""
     by = {}
     for r in records:
         by.setdefault(r["url"], []).append(r)
@@ -46,6 +62,11 @@ def stats(records, threshold=60):
             "errors": sum(1 for r in rs if "error" in r),
             "last_ts": max(r.get("ts", 0) for r in rs),
         }
+        lats = [r["latency_ms"] for r in rs if "error" not in r and "latency_ms" in r]
+        res[url].update({"latency_p50_ms": percentile(lats, 50),
+                         "latency_p95_ms": percentile(lats, 95),
+                         "latency_p99_ms": percentile(lats, 99),
+                         "blocks_per_min": block_rate(rs)})
     return res
 
 def watch(urls, kind, path, interval, iterations=None, threshold=60, webhook=None,
