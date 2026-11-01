@@ -3,7 +3,7 @@
 History is an append-only JSONL file (one sample per line, with a unix `ts`), so it can be
 tailed, rotated or shipped to a dashboard without a database. Stdlib only.
 """
-import argparse, json, os, time
+import argparse, json, math, os, time
 from . import monitor, alerts
 
 def append(path, samples, ts=None):
@@ -34,7 +34,7 @@ def percentile(values, q):
     if not values:
         return None
     vs = sorted(values)
-    k = max(0, min(len(vs) - 1, int(round(q / 100.0 * len(vs) + 0.5)) - 1))
+    k = max(0, min(len(vs) - 1, math.ceil(q / 100.0 * len(vs)) - 1))
     return vs[k]
 
 def block_rate(rs):
