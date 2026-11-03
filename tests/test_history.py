@@ -1,4 +1,4 @@
-import os, tempfile, unittest
+import contextlib, csv, io, json, os, tempfile, time, unittest
 from nodepulse import history
 
 class T(unittest.TestCase):
@@ -41,6 +41,29 @@ class T(unittest.TestCase):
         self.assertEqual(s["blocks_per_min"], 10.0)
         one = history.stats([{"url": "b", "score": 0, "error": "x", "ts": 1}])["b"]
         self.assertIsNone(one["latency_p50_ms"]); self.assertIsNone(one["blocks_per_min"])
+
+    def test_render_stats_formats(self):
+        res = history.stats([{"url": "a|b", "score": 90, "ts": 0, "best": 10, "latency_ms": 5},
+                             {"url": "a|b", "score": 90, "ts": 60, "best": 20, "latency_ms": 7},
+                             {"url": "z", "score": 0, "error": "x", "ts": 1}])
+        self.assertEqual(json.loads(history.render_stats(res)), res)
+        rows = list(csv.reader(io.StringIO(history.render_stats(res, "csv"))))
+        self.assertEqual(rows[0][:3], ["node", "samples", "uptime_pct"])
+        self.assertEqual([r[0] for r in rows[1:]], ["a|b", "z"])      # sorted by node
+        z = dict(zip(rows[0], rows[2]))
+        self.assertEqual(z["latency_p50_ms"], ""); self.assertEqual(z["blocks_per_min"], "")
+        md = history.render_stats(res, "md").splitlines()
+        self.assertEqual(len(md), 4); self.assertTrue(md[2].startswith("| a\\|b |"))
+        self.assertEqual(md[1].count("---"), len(history.STAT_COLS) + 1)
+        with self.assertRaises(ValueError): history.render_stats(res, "xml")
+        self.assertEqual(history.render_stats({}, "csv").count("\n"), 0)
+
+    def test_stats_cli_format(self):
+        history.append(self.db, [{"url": "n1", "score": 80, "latency_ms": 9}], ts=int(time.time()))
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            history.main(["stats", "--db", self.db, "--format", "csv"])
+        self.assertIn("n1,1,100.0,80.0,80,0,9,9,9,", out.getvalue())
 
     def test_watch_loop_persists_and_alerts(self):
         seq = iter([[{"url": "n", "score": 95}], [{"url": "n", "score": 20}], [{"url": "n", "score": 90}]])

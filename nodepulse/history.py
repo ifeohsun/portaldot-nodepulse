@@ -3,7 +3,7 @@
 History is an append-only JSONL file (one sample per line, with a unix `ts`), so it can be
 tailed, rotated or shipped to a dashboard without a database. Stdlib only.
 """
-import argparse, json, math, os, time
+import argparse, csv, io, json, math, os, time
 from . import monitor, alerts
 
 def append(path, samples, ts=None):
@@ -69,6 +69,29 @@ def stats(records, threshold=60):
                          "blocks_per_min": block_rate(rs)})
     return res
 
+STAT_COLS = ["samples", "uptime_pct", "avg_score", "min_score", "errors", "latency_p50_ms",
+             "latency_p95_ms", "latency_p99_ms", "blocks_per_min", "last_ts"]
+
+def render_stats(res, fmt="json"):
+    """Render the dict from stats() as json, csv (one row per node) or a Markdown table.
+    Missing values (e.g. no successful samples -> no latency) become empty cells, not 'None'."""
+    if fmt == "json":
+        return json.dumps(res, indent=2)
+    rows = [[url] + ["" if res[url].get(c) is None else res[url][c] for c in STAT_COLS]
+            for url in sorted(res)]
+    head = ["node"] + STAT_COLS
+    if fmt == "csv":
+        buf = io.StringIO()
+        w = csv.writer(buf, lineterminator="\n")
+        w.writerow(head); w.writerows(rows)
+        return buf.getvalue().rstrip("\n")
+    if fmt == "md":
+        esc = lambda v: str(v).replace("|", "\\|")
+        lines = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+        lines += ["| " + " | ".join(esc(v) for v in r) + " |" for r in rows]
+        return "\n".join(lines)
+    raise ValueError("unknown format: %s" % fmt)
+
 def watch(urls, kind, path, interval, iterations=None, threshold=60, webhook=None,
           sampler=None, sleep=time.sleep, confirm=1, stall_after=None,
           deliver=None, outbox_max=50):
@@ -113,13 +136,15 @@ def main(argv=None):
     w.add_argument("--stall-after", type=int, help="alert when best height hasn't advanced for N samples")
     st = sub.add_parser("stats"); st.add_argument("--db", default="nodepulse-history.jsonl")
     st.add_argument("--hours", type=float, help="only the last N hours")
+    st.add_argument("--format", choices=["json", "csv", "md"], default="json",
+                    help="output format (csv/md: one row per node, ready for a spreadsheet or README)")
     a = p.parse_args(argv)
     if a.cmd == "watch":
         watch(a.urls, a.kind, a.db, a.interval, a.iterations, a.threshold, a.webhook,
               confirm=a.confirm, stall_after=a.stall_after)
     else:
         since = int(time.time() - a.hours * 3600) if a.hours else None
-        print(json.dumps(stats(load(a.db, since)), indent=2))
+        print(render_stats(stats(load(a.db, since)), a.format))
 
 if __name__ == "__main__":
     main()
